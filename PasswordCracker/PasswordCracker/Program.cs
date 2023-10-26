@@ -1,8 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Diagnostics;
+using System.IO.Compression;
 
 namespace PasswordCracker
 {
@@ -17,6 +22,65 @@ namespace PasswordCracker
     /// </summary>
     class Program
     {
+        static void Main(string[] args)
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            // Define the alphabet
+            IEnumerable<char> alphabet = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
+
+            // Preset list of MD5 hashes
+            HashSet<string> hashedPasswords = File.ReadAllLines("passwords_hashed.txt").ToHashSet();
+
+            List<string> matchingStrings = new List<string>();
+
+            IEnumerable<string> GenerateStrings(IEnumerable<char> alphabet)
+            {
+                foreach (var i in alphabet)
+                    foreach (var j in alphabet)
+                        foreach (var k in alphabet)
+                            foreach (var l in alphabet)
+                                foreach (var m in alphabet)
+                                    yield return $"{i}{j}{k}{l}{m}";
+            }
+
+            var stringsGenerator = GenerateStrings(alphabet);
+
+            foreach (string str in stringsGenerator)
+            {
+                string md5Hash = md5(str);
+
+                if (hashedPasswords.Contains(md5Hash))
+                {
+                    matchingStrings.Add(str);
+                    if (matchingStrings.Count == hashedPasswords.Count)
+                    {
+                        break;
+                    }
+                }
+            };
+
+
+            Console.WriteLine("MD5 Password Cracker v1.0");
+
+            bool passwordsValidated = Validator.ValidateResults(matchingStrings.ToArray());
+
+            sw.Stop();
+
+            /*Console.WriteLine($"\nPasswords successfully cracked: {passwordsValidated}");*/
+            Console.WriteLine(passwordsValidated);
+
+
+            System.TimeSpan ts = sw.Elapsed;
+
+            // Format and display the TimeSpan value
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+                ts.Hours, ts.Minutes, ts.Seconds,
+                ts.Milliseconds / 10);
+            Console.WriteLine("RunTime " + elapsedTime);
+        }
+
+
         public static string md5(string input)
         {
             // Use input string to calculate MD5 hash
@@ -33,25 +97,6 @@ namespace PasswordCracker
                 }
                 return sb.ToString();
             }
-        }
-        
-        static void Main(string[] args)
-        {
-            string[] hashedPasswords = File.ReadAllLines("passwords_hashed.txt");
-
-            Console.WriteLine("MD5 Password Cracker v1.0");
-            
-            foreach (var pass in hashedPasswords)
-            {
-                Console.WriteLine(pass);
-            }
-
-            // Use this method to test if you managed to correctly crack all the passwords
-            // Note that hashedPasswords will need to be swapped out with an array the exact
-            // same length that contains all the cracked passwords
-            bool passwordsValidated = Validator.ValidateResults(hashedPasswords);
-            
-            Console.WriteLine($"\nPasswords successfully cracked: {passwordsValidated}");
         }
     }
 }
